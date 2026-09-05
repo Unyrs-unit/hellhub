@@ -15,3 +15,11 @@
 - Fixed conspicuously untranslated UI labels across the 14 interface locales.
 - Player Builds and Player Tier Lists remain empty-by-default and manually authored only.
 - Super Earth TV remains 1000 original generated transmissions per locale plus a few short classic lines.
+
+### 2026-09-05 — Catalog/ticker data architecture update
+- Moved all Super Earth TV ticker phrases into `assets/js/ticker.js` as editable locale data.
+- Ticker cycles now shuffle each cycle without repeating a phrase until the full locale list is exhausted.
+- Added stable IDs, localized display-name fields, and stratagem call-in code metadata to catalog records.
+- Added stratagem call-in code filtering and category/permit filters; weapon/armor catalogs keep compact filters.
+- Reused the existing local weapon, armor, and stratagem icon assets across cards and global search.
+- Updated localization notes and added call-in filter wording for all 14 supported locales.
