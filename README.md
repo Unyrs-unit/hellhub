@@ -1,100 +1,32 @@
-# HELLDiVE//DB — GitHub Pages build
+# HellHub — Cloudflare Workers deployment
 
-A multi-page, dependency-free frontend prototype for an unofficial Helldivers 2 community portal.
+This package is configured for **Cloudflare Workers Builds**, matching a deployment command of:
 
-## Pages
+```bash
+npx wrangler deploy
+```
 
-- `index.html` — home terminal
-- `war.html` — live Galactic War data
-- `weapons.html`, `stratagems.html`, `armor.html`, `enemies.html` — searchable/filterable catalogs
-- `builds.html` — featured builds + local loadout generator + shareable query-string builds
-- `tier-lists.html` — category tiers + browser-local voting
-- `guides.html` — guide cards + deep-linked prototype reader
-- `news.html` — Steam/community news integration with fallback
-- `memes.html` — community meme wall + local submission draft demo
-- `data-sources.html` — API/data transparency page
-- `privacy.html`, `terms.html` — prototype legal pages
-- `404.html` — GitHub Pages fallback
+## Repository structure
 
-## Live data sources
+- `src/worker.js` — server-side API proxy
+- `public/` — browser-visible static site
+- `wrangler.jsonc` — Workers + Static Assets configuration
 
-### 1) Helldivers 2 community API
+Do not move `src/worker.js` into `public/`.
 
-Upstream root: `https://api.helldivers2.dev`
+## Cloudflare build settings
 
-The browser does **not** call this origin directly. Cloudflare Pages Functions proxy requests through same-origin `/api/hd2/*` routes to avoid browser CORS issues and centralize caching.
+- Deploy command: `npx wrangler deploy`
+- Root directory: repository root
+- Worker name: `hellhub`
 
-The site uses these public endpoints through `assets/js/api.js`:
+No custom build command is required for this static project.
 
-- `/api/v1/war`
-- `/api/v1/planets`
-- `/api/v1/campaigns`
-- `/api/v1/assignments`
-- `/api/v1/dispatches`
-- `/api/v1/planet-events`
-- `/api/v2/space-stations`
-- `/api/v1/steam` as a fallback for Steam news
+## Tests after deployment
 
-The site also attempts Valve's public current-player endpoint: `ISteamUserStats/GetNumberOfCurrentPlayers/v1` for App ID `553850`.
+- `/api/health`
+- `/api/hd2/v1/war`
+- `/api/steam/players`
+- `/api/steam/news`
 
-The Cloudflare proxy adds `X-Super-Client`, uses edge caching, and the browser also keeps a short local cache. A diagnostic endpoint is available at `/api/health`.
-
-This is a community API and **not an official Arrowhead developer API**. The site intentionally does not call Arrowhead's reverse-engineered game backend directly.
-
-### 2) Steam public news API
-
-The news page first attempts Valve's public `ISteamNews/GetNewsForApp/v2` endpoint for Helldivers 2 (App ID `553850`). If a browser blocks the call because of CORS, the site falls back to the community wrapper.
-
-## Localization
-
-The interface selector includes the 14 languages listed for Helldivers 2 on Steam:
-
-English, French, Italian, German, Spanish (Spain), Japanese, Korean, Portuguese (Brazil), Spanish (Latin America), Polish, Portuguese (Portugal), Russian, Simplified Chinese, Traditional Chinese.
-
-Canonical item names stay in English for data consistency. Shared interface strings, navigation, status labels and the TV ticker switch languages. Unsupported/fine-grained strings fall back to English.
-
-## GitHub Pages
-
-No build step is needed.
-
-1. Upload all files to the repository root.
-2. GitHub → Settings → Pages.
-3. Deploy from `main` / root.
-
-All links and assets use relative paths so project pages such as `username.github.io/repository/` work correctly.
-
-## Production next steps
-
-GitHub Pages is frontend-only. For production accounts, public meme submissions, comments, ratings, ad controls, affiliate attribution, merch or Premium features, add a backend (Supabase, Cloudflare Workers/D1, Firebase, etc.).
-
-For higher traffic, put live API traffic behind a caching worker. Do not expose private API keys in this repository.
-
-## Disclaimer
-
-Unofficial Helldivers 2 community website. Not affiliated with Arrowhead Game Studios, PlayStation or Valve. Local catalog/build/tier content is editorial prototype data and should be reviewed after balance patches.
-
-
-## Cloudflare Pages API proxy
-
-This build contains Pages Functions under `functions/api/`:
-
-- `/api/hd2/*` — whitelisted proxy to `api.helldivers2.dev/api/*`
-- `/api/steam/news` — Steam news server-side proxy
-- `/api/steam/players` — Steam current players proxy
-- `/api/health` — quick deployment/API diagnostic
-
-Cloudflare Pages detects the `functions/` folder on Git deployments. `_routes.json` limits Function invocations to `/api/*`, leaving static assets as static requests.
-
-## Cloudflare Pages deployment (Advanced Mode)
-
-This version uses `_worker.js` instead of a `/functions` directory. Keep `_worker.js` in the **build output directory** alongside `index.html`.
-
-Recommended Git-integrated Pages settings for this repository:
-
-- Framework preset: None
-- Production branch: main
-- Root directory: leave blank (repository root)
-- Build command: `exit 0`
-- Build output directory: `.`
-
-After deployment, test `/api/health` first.
+`/api/health` should report `"runtime": "workers-static-assets"`.
