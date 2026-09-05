@@ -84,3 +84,17 @@ This build contains Pages Functions under `functions/api/`:
 - `/api/health` — quick deployment/API diagnostic
 
 Cloudflare Pages detects the `functions/` folder on Git deployments. `_routes.json` limits Function invocations to `/api/*`, leaving static assets as static requests.
+
+## Cloudflare Pages deployment (Advanced Mode)
+
+This version uses `_worker.js` instead of a `/functions` directory. Keep `_worker.js` in the **build output directory** alongside `index.html`.
+
+Recommended Git-integrated Pages settings for this repository:
+
+- Framework preset: None
+- Production branch: main
+- Root directory: leave blank (repository root)
+- Build command: `exit 0`
+- Build output directory: `.`
+
+After deployment, test `/api/health` first.
