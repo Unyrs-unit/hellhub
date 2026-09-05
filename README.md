@@ -1,46 +1,27 @@
-# HellHub — Cloudflare Workers deployment
+# HELLDiVE//DB — major content upgrade
 
-This package is configured for **Cloudflare Workers Builds**, matching a deployment command of:
+Cloudflare Workers + Static Assets build for the Helldivers 2 community portal.
 
-```bash
-npx wrangler deploy
-```
+## Current catalog
 
-## Repository structure
+- 132 weapons: 52 primary, 24 secondary, 35 support, 21 throwables
+- 114 usable/common stratagem records across support, backpack, Eagle, orbital, sentry, emplacement, vehicle and mission groups
+- 107 body-armour records
+- 30 localized armor-passive descriptions
+- 14 interface locales
+- 1000 original Super Earth TV transmissions per locale, plus a few short classic phrases
 
-- `src/worker.js` — server-side API proxy
-- `public/` — browser-visible static site
-- `wrangler.jsonc` — Workers + Static Assets configuration
+## Community tools
 
-Do not move `src/worker.js` into `public/`.
+Builds and tier lists start empty. They are created only by players and stored in browser localStorage until a real account/backend system is added.
 
-## Cloudflare build settings
+## Runtime
 
+- `src/worker.js` proxies public community Galactic War data and public Steam endpoints
+- `public/` contains the static frontend
 - Deploy command: `npx wrangler deploy`
-- Root directory: repository root
-- Worker name: `hellhub`
+- Test endpoints after deployment: `/api/health`, `/api/hd2/v1/war`, `/api/steam/players`
 
-No custom build command is required for this static project.
+## Data policy
 
-## Tests after deployment
-
-- `/api/health`
-- `/api/hd2/v1/war`
-- `/api/steam/players`
-- `/api/steam/news`
-
-`/api/health` should report `"runtime": "workers-static-assets"`.
-
-## HD2 request identity
-
-The Worker now sends both headers expected by current community API clients:
-
-- `X-Super-Client`: your Worker hostname
-- `X-Super-Contact`: defaults to your public site URL
-
-No extra setting is required for the fallback. If you want to provide a better public
-contact (recommended), add a Cloudflare Worker variable named `HD2_CONTACT`, for example
-`github/your-name` or a project contact email.
-
-The health endpoint also includes a short upstream error body when HD2 returns a non-2xx
-response, making future API changes easier to diagnose.
+Canonical game item names are preserved for searchability. Detailed balance values are included where they were independently cross-checked; unknown/conflicting fields remain explicit rather than guessed. Detail dialogs link to a community reference search for manual verification.

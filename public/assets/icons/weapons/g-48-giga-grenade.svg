@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<rect width="64" height="64" rx="8" fill="#0b0e10"/>
+<g fill="none" stroke="#d7d9d4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M25 18h14l5 9-5 21H25l-5-21Z"/><path d="M28 18v-6h8v6M34 12l6-4M24 31h16"/></g>
+<path d="M4 4h13M4 4v13M60 47v13H47" fill="none" stroke="#e9bf3f" stroke-width="1.4"/>
+<text x="32" y="60" text-anchor="middle" font-family="monospace" font-size="6" fill="#e9bf3f">G48GIGAG</text>
+</svg>
