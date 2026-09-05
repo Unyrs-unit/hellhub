@@ -85,7 +85,7 @@ async function proxySteamNews(request) {
   if (request.method !== 'GET') {
     return json({ ok: false, error: 'Method not allowed' }, 405, 'no-store', { allow: 'GET' });
   }
-  const target = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=553850&count=8&maxlength=420&format=json';
+  const target = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=553850&count=10&maxlength=1800&format=json';
   try {
     const upstream = await fetch(target, { cf: { cacheEverything: true, cacheTtl: 300 } });
     if (!upstream.ok) return json({ ok: false, error: `Steam news ${upstream.status}` }, upstream.status);
