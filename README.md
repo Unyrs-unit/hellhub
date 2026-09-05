@@ -20,7 +20,9 @@ A multi-page, dependency-free frontend prototype for an unofficial Helldivers 2 
 
 ### 1) Helldivers 2 community API
 
-Root: `https://api.helldivers2.dev`
+Upstream root: `https://api.helldivers2.dev`
+
+The browser does **not** call this origin directly. Cloudflare Pages Functions proxy requests through same-origin `/api/hd2/*` routes to avoid browser CORS issues and centralize caching.
 
 The site uses these public endpoints through `assets/js/api.js`:
 
@@ -35,7 +37,7 @@ The site uses these public endpoints through `assets/js/api.js`:
 
 The site also attempts Valve's public current-player endpoint: `ISteamUserStats/GetNumberOfCurrentPlayers/v1` for App ID `553850`.
 
-Requests include `X-Super-Client`, use browser caching, and are queued with a delay to stay friendly to the hosted community service.
+The Cloudflare proxy adds `X-Super-Client`, uses edge caching, and the browser also keeps a short local cache. A diagnostic endpoint is available at `/api/health`.
 
 This is a community API and **not an official Arrowhead developer API**. The site intentionally does not call Arrowhead's reverse-engineered game backend directly.
 
@@ -70,3 +72,15 @@ For higher traffic, put live API traffic behind a caching worker. Do not expose 
 ## Disclaimer
 
 Unofficial Helldivers 2 community website. Not affiliated with Arrowhead Game Studios, PlayStation or Valve. Local catalog/build/tier content is editorial prototype data and should be reviewed after balance patches.
+
+
+## Cloudflare Pages API proxy
+
+This build contains Pages Functions under `functions/api/`:
+
+- `/api/hd2/*` — whitelisted proxy to `api.helldivers2.dev/api/*`
+- `/api/steam/news` — Steam news server-side proxy
+- `/api/steam/players` — Steam current players proxy
+- `/api/health` — quick deployment/API diagnostic
+
+Cloudflare Pages detects the `functions/` folder on Git deployments. `_routes.json` limits Function invocations to `/api/*`, leaving static assets as static requests.
