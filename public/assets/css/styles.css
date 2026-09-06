@@ -115,3 +115,6 @@ radial-gradient(circle at 75% 35%,rgba(233,191,63,.16),transparent 22%),linear-g
 .catalog-toolbar{align-items:end}
 @media (max-width:900px){.callcode-filter{min-width:100%;}.catalog-toolbar .field-wrap{min-width:0;}.seq b{width:24px;height:24px}}
 .search-result{display:flex;align-items:center;gap:12px}.search-result img{width:38px;height:38px;object-fit:contain;flex:none}.search-result>span{min-width:0;display:grid;gap:4px}.search-result small{color:var(--muted);font-size:.72rem;line-height:1.2}
+
+/* Sector A: reliability/status/search refinements */
+.home-live-stat.is-offline strong{color:#777f82}.home-panel-head i.is-live{color:#a9bda5}.home-panel-head i.is-offline{color:#b67a6d}.search-hint{margin:-4px 0 12px;color:#697275;font-size:9px;letter-spacing:.04em}.search-result{width:100%;border:0;text-align:left;cursor:pointer;background:transparent;padding:10px 12px;border-radius:8px;color:inherit}.search-result:hover{background:#11171a}.search-result:focus-visible{outline:1px solid var(--yellow);outline-offset:-1px}.search-result strong{min-width:0}.search-result img{background:#0a0d0f;border:1px solid #23292c;border-radius:6px;padding:3px}

@@ -76,8 +76,41 @@ function modal(content,wide=false){$('#modal-root').innerHTML=`<div class="modal
 function escOnce(e){if(e.key==='Escape')closeModal()} function closeModal(){document.body.classList.remove('modal-open');$('#modal-root').innerHTML='';document.removeEventListener('keydown',escOnce)}
 function toast(msg){const x=document.createElement('div');x.className='toast';x.textContent=msg;document.body.appendChild(x);setTimeout(()=>x.remove(),1900)}
 function openProfile(){modal(`<div class="modal-top"><div><span class="kicker">${t('localStorage')}</span><h2>${t('profile')}</h2></div><button class="close-modal" data-close>×</button></div><form class="profile-form" data-profile-form><label>${t('profile')}<input class="field" name="callsign" maxlength="24" value="${esc(getCallsign())}" placeholder="HELLDIVER-01"></label><button class="button button-primary" type="submit">${t('saved')}</button></form>`);$('[data-profile-form]').onsubmit=e=>{e.preventDefault();localStorage.setItem('hd2-callsign',new FormData(e.currentTarget).get('callsign').trim());closeModal();renderChrome();toast(t('saved'))}}
-function searchIndex(){return [...D.weapons.map(x=>({...x,group:t('weapons'),href:'weapons.html'})),...D.stratagems.map(x=>({...x,group:t('stratagems'),href:'stratagems.html'})),...D.armor.map(x=>({...x,group:t('armor'),href:'armor.html'})),...D.enemies.map(x=>({...x,group:t('enemies'),href:'enemies.html'}))]}
-function openSearch(){modal(`<div class="modal-top"><div><span class="kicker">${t('search')}</span><h2>${t('searchCatalog')}</h2></div><button class="close-modal" data-close>×</button></div><div class="search-field"><input type="search" data-global-search placeholder="${t('searchCatalog')}…" autofocus></div><div class="search-results" data-search-results></div>`);const input=$('[data-global-search]'),root=$('[data-search-results]');const render=()=>{const q=input.value.trim().toLowerCase();const r=searchIndex().filter(x=>{const display=localeName(x);const code=x.callInCode||x.sequence?.join('')||'';return !q||`${x.name} ${display} ${x.type||''} ${x.slot||''} ${x.passive||''} ${(x.traits||[]).join(' ')} ${code}`.toLowerCase().includes(q)}).slice(0,30);root.innerHTML=r.length?r.map(x=>`<a class="search-result" href="${x.href}">${x.icon?`<img src="${esc(x.icon)}" alt="">`:''}<span><strong>${esc(localeName(x))}</strong><small>${esc(x.group)} // ${esc(term(x.type||x.slot||''))}${x.callInDisplay?` // ${esc(x.callInDisplay)}`:''}</small></span></a>`).join(''):`<div class="empty">${t('noResults')}</div>`};input.oninput=render;render();setTimeout(()=>input.focus(),20)}
+function searchIndex(){
+  const rows=[
+    ...D.weapons.map(x=>({...x,kind:'weapons',group:t('weapons')})),
+    ...D.stratagems.map(x=>({...x,kind:'stratagems',group:t('stratagems')})),
+    ...D.armor.map(x=>({...x,kind:'armor',group:t('armor')})),
+    ...D.enemies.map(x=>({...x,kind:'enemies',group:t('enemies')})),
+    ...(Array.isArray(D.builds)?D.builds.map(x=>({...x,kind:'builds',group:t('builds'),name:x.title||x.name})):[]),
+    ...(Array.isArray(D.guides)?D.guides.map(x=>({...x,kind:'guides',group:t('guides'),name:x.title||x.name})):[])
+  ];
+  return rows;
+}
+function searchText(x){
+  const localized=localeName(x);
+  const passive=localePassive(x);
+  const code=x.callInCode||x.sequence?.join('')||x.callInDisplay||'';
+  const extra=[x.name,x.title,x.description,x.desc,x.type,x.slot,x.passive,x.role,x.purpose,x.faction,passive,localized,code,...(x.traits||[])];
+  return extra.filter(Boolean).join(' ').toLowerCase();
+}
+function searchScore(x,q){
+  const nq=q.trim().toLowerCase(); if(!nq)return 0;
+  const exact=localeName(x).toLowerCase()===nq || String(x.name||'').toLowerCase()===nq;
+  const starts=localeName(x).toLowerCase().startsWith(nq) || String(x.name||'').toLowerCase().startsWith(nq);
+  return exact?100:starts?60:searchText(x).includes(nq)?20:0;
+}
+function openSearch(){
+  modal(`<div class="modal-top"><div><span class="kicker">${t('search')}</span><h2>${t('searchCatalog')}</h2></div><button class="close-modal" data-close>×</button></div><div class="search-field"><input type="search" data-global-search placeholder="${t('searchCatalog')}…" autocomplete="off" autofocus></div><div class="search-hint">${t('searchHint')||'Search names, descriptions, categories and stratagem call-in codes'}</div><div class="search-results" data-search-results></div>`);
+  const input=$('[data-global-search]'),root=$('[data-search-results]');
+  const render=()=>{
+    const q=input.value.trim().toLowerCase();
+    const r=searchIndex().map(x=>({...x,_score:searchScore(x,q)})).filter(x=>!q||x._score>0).sort((a,b)=>b._score-a._score||localeName(a).localeCompare(localeName(b),I18N.locale)).slice(0,30);
+    root.innerHTML=r.length?r.map(x=>`<button class="search-result" type="button" data-search-kind="${esc(x.kind)}" data-search-id="${esc(x.id||'')}">${x.icon?`<img src="${esc(x.icon)}" alt="">`:''}<span><strong>${esc(localeName(x)||x.name||x.title||'')}</strong><small>${esc(x.group)}${x.type||x.slot?` // ${esc(term(x.type||x.slot))}`:''}${x.callInDisplay?` // ${esc(x.callInDisplay)}`:''}</small></span></button>`).join(''):`<div class="empty">${t('noResults')}</div>`;
+    $$('[data-search-kind]',root).forEach(btn=>btn.onclick=()=>{const found=D[btn.dataset.searchKind]?.find(x=>String(x.id)===btn.dataset.searchId);if(found&&['weapons','stratagems','armor','enemies'].includes(btn.dataset.searchKind))openDetail(btn.dataset.searchKind,found);else{closeModal();const target={builds:'builds.html',guides:'guides.html'}[btn.dataset.searchKind]||'index.html';location.href=target}});
+  };
+  input.oninput=render; render(); setTimeout(()=>input.focus(),20);
+}
 function pageHero(k,title,desc,badge='HELLDIVE DATABASE // TERMINAL'){return `<section class="page-hero"><div class="shell page-hero-inner"><div><span class="kicker">${esc(k)}</span><h1>${esc(title)}</h1><p>${esc(desc)}</p></div><div class="page-badge">${esc(badge)}</div></div></section>`}
 function arrowSeq(seq=[]){const map={W:'↑',A:'←',S:'↓',D:'→'};return seq.length?`<div class="seq">${seq.map(x=>`<b>${map[x]||x}</b>`).join('')}</div>`:`<span class="muted">${t('unknown')}</span>`}
 function quality(rec){return rec.verified?`<span class="quality verified">● ${t('verified')}</span>`:`<span class="quality partial">◐ ${t('catalogOnly')}</span>`}
@@ -101,15 +134,15 @@ function fallbackNews(){
 function renderHome(){
   const m=D.metadata||{};
   const initialNews=fallbackNews();window.__HD2_HOME_NEWS=initialNews;
-  $('#page-root').innerHTML=`<section class="home-news-hero"><div class="shell"><div class="home-news-frame home-news-frame-refined"><div class="home-news-copy"><span class="eyebrow">${t('latestNews')}</span><h1>${t('newsLead')}</h1><p>${t('homeIntro')}</p><div class="hero-actions"><a class="button button-primary" href="news.html">${t('viewAllNews')} →</a><a class="button button-secondary" href="war.html">${t('liveWar')} →</a></div><div class="home-status-strip"><span>● DATABASE ONLINE</span><span>● LIVE WAR DATA</span><span>● COMMUNITY NODE</span></div></div><div class="home-hero-side"><div class="home-terminal home-intel-panel"><div class="home-panel-head"><span>${t('currentIntel')}</span><i data-home-state>${t('loading')}</i></div><div class="home-live-stats"><div><span>${t('playerCount')}</span><strong data-home-players>—</strong><small>ACTIVE HELLDIVERS</small></div><div><span>STEAM ONLINE</span><strong data-home-steam>—</strong><small>STEAM WEB API</small></div></div></div><div class="home-news-panel"><div class="home-panel-head"><span>${t('latestNews')}</span><a href="news.html">${t('viewAllNews')} →</a></div><div class="home-news-list" data-home-news-list>${renderCompactHomeNews(initialNews)}</div></div></div></div></div></section>
+  $('#page-root').innerHTML=`<section class="home-news-hero"><div class="shell"><div class="home-news-frame home-news-frame-refined"><div class="home-news-copy"><span class="eyebrow">${t('latestNews')}</span><h1>${t('newsLead')}</h1><p>${t('homeIntro')}</p><div class="hero-actions"><a class="button button-primary" href="news.html">${t('viewAllNews')} →</a><a class="button button-secondary" href="war.html">${t('liveWar')} →</a></div><div class="home-status-strip"><span>● DATABASE ONLINE</span><span>● LIVE WAR DATA</span><span>● COMMUNITY NODE</span></div></div><div class="home-hero-side"><div class="home-terminal home-intel-panel"><div class="home-panel-head"><span>${t('currentIntel')}</span><i data-home-state>${t('loading')}</i></div><div class="home-live-stats"><div class="home-live-stat"><span>${t('playerCount')}</span><strong data-home-active-helldivers>—</strong><small>LIVE WAR DATA</small></div><div class="home-live-stat"><span>STEAM ONLINE</span><strong data-home-steam>—</strong><small>STEAM WEB API</small></div></div></div><div class="home-news-panel"><div class="home-panel-head"><span>${t('latestNews')}</span><a href="news.html">${t('viewAllNews')} →</a></div><div class="home-news-list" data-home-news-list>${renderCompactHomeNews(initialNews)}</div></div></div></div></div></section>
   <section class="section subtle-section"><div class="shell"><div class="home-split"><div><div class="section-heading"><div><span class="kicker">${t('highCommand')}</span><h2>${t('dispatches')}</h2></div></div><div data-home-dispatch>${newsCards(initialNews.slice(0,2),true)}</div></div><aside class="home-db"><span class="kicker">${t('database')}</span><h2>${t('exploreDatabase')}</h2><div class="quick-db">${[['weapons','weapons.html',D.counts.weapons],['stratagems','stratagems.html',D.counts.stratagems],['armor','armor.html',D.counts.armor],['builds','builds.html',t('local')],['tiers','tier-lists.html',t('local')]].map(([k,h,c])=>`<a href="${h}"><span>${t(k)}</span><strong>${c}</strong></a>`).join('')}</div><p class="canonical-note">${t('translationNote')} ${t('canonicalMechanicsNote')}</p></aside></div></div></section>
   <section class="section catalog-status-section"><div class="shell"><div class="section-heading"><div><span class="kicker">${t('totalCatalog')}</span><h2>${t('database')}</h2></div><p>${t('weaponDataNote')}</p></div><div class="catalog-status-grid"><article><strong>${D.counts.weapons}</strong><span>${t('weapons')}</span><small>52 ${t('primary')} · 24 ${t('secondary')} · 35 ${t('support')} · 21 ${t('throwables')}</small></article><article><strong>${D.counts.stratagems}</strong><span>${t('stratagems')}</span><small>${t('currentPatch')} ${esc(m.currentPatch||'—')}</small></article><article><strong>${D.counts.armor}</strong><span>${t('armor')}</span><small>29 ${t('light')} · 49 ${t('medium')} · 29 ${t('heavy')}</small></article><article><strong>1000+</strong><span>${t('ticker')}</span><small>${t('tickerCount')}</small></article></div></div></section>`;
   bindHomeNews();
   loadNewsBundle().then(b=>{
-    if(b.players!=null)$('[data-home-players]').textContent=Number(b.players).toLocaleString(I18N.locale);
-    if(b.activeHelldivers!=null)$('[data-home-players]').textContent=Number(b.activeHelldivers).toLocaleString(I18N.locale);
-    if(b.players!=null)$('[data-home-steam]').textContent=Number(b.players).toLocaleString(I18N.locale);
-    $('[data-home-state]').textContent=b.live?t('live'):t('offline');
+    const helldiversEl=$('[data-home-active-helldivers]'),steamEl=$('[data-home-steam]'),stateEl=$('[data-home-state]');
+    if(steamEl){steamEl.textContent=b.players!=null?Number(b.players).toLocaleString(I18N.locale):'—';steamEl.closest('.home-live-stat')?.classList.toggle('is-offline',b.players==null);}
+    if(helldiversEl){helldiversEl.textContent=b.activeHelldivers!=null?Number(b.activeHelldivers).toLocaleString(I18N.locale):'—';helldiversEl.closest('.home-live-stat')?.classList.toggle('is-offline',b.activeHelldivers==null);}
+    if(stateEl){stateEl.textContent=b.live?t('live'):t('offline');stateEl.classList.toggle('is-live',b.live);stateEl.classList.toggle('is-offline',!b.live);}
     const homeItems=b.steam.length?b.steam:b.dispatch.length?b.dispatch:initialNews;
     window.__HD2_HOME_NEWS=homeItems.slice(0,6);
     $('[data-home-news-list]').innerHTML=renderCompactHomeNews(window.__HD2_HOME_NEWS);
