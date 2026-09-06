@@ -197,6 +197,22 @@ function renderCatalog(kind){
   function fallbackCopy(code){const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch{}ta.remove();toast(t('copied'))}
   function draw(){const query=q.value.trim().toLowerCase(),fv=f.value,typev=ft?.value||'',permitv=fp?.value||'',codev=normalizeCallIn(fc?.value||''),penv=fpen?.value||'';let rows=data.filter(x=>{const hay=JSON.stringify({...x,name:localeName(x)}).toLowerCase();const code=normalizeCallIn(x.callInCode||x.sequence?.join('')||'');return(!fv||x[primaryKey]===fv)&&(!typev||x.type===typev)&&(!permitv||x.permit===permitv)&&(!penv||x.penetration===penv)&&(!codev||code===codev||code.includes(codev))&&(!query||hay.includes(query))});rows=[...rows].sort((a,b)=>{if(sort.value==='verified')return Number(!!b.verified)-Number(!!a.verified)||localeName(a).localeCompare(localeName(b),I18N.locale);if(sort.value==='source')return String(a.source||'').localeCompare(String(b.source||''),I18N.locale)||localeName(a).localeCompare(localeName(b),I18N.locale);if(sort.value==='damage')return(num(b.damage)||-Infinity)-(num(a.damage)||-Infinity)||localeName(a).localeCompare(localeName(b),I18N.locale);if(sort.value==='fireRate')return(num(b.rpm)||-Infinity)-(num(a.rpm)||-Infinity)||localeName(a).localeCompare(localeName(b),I18N.locale);if(sort.value==='capacity')return(num(b.capacity)||-Infinity)-(num(a.capacity)||-Infinity)||localeName(a).localeCompare(localeName(b),I18N.locale);if(sort.value==='cooldown')return(num(a.cooldown)??Infinity)-(num(b.cooldown)??Infinity)||localeName(a).localeCompare(localeName(b),I18N.locale);if(sort.value==='callIn')return(num(a.callIn)??Infinity)-(num(b.callIn)??Infinity)||localeName(a).localeCompare(localeName(b),I18N.locale);if(sort.value==='level')return(num(a.level)??Infinity)-(num(b.level)??Infinity)||localeName(a).localeCompare(localeName(b),I18N.locale);if(sort.value==='category')return term(a.permit).localeCompare(term(b.permit),I18N.locale)||localeName(a).localeCompare(localeName(b),I18N.locale);return localeName(a).localeCompare(localeName(b),I18N.locale)});$('[data-count]').textContent=rows.length;root.innerHTML=rows.length?rows.map(x=>catalogCard(kind,x,{compareIds})).join(''):`<div class="empty-state"><strong>${t('noResults')}</strong><span>${kind==='stratagems'?t('stratagemSearchHint'):t('searchCatalog')}</span></div>`;$$('[data-detail]').forEach(b=>b.onclick=()=>openDetail(kind,data.find(x=>x.id===b.dataset.detail)||D[kind][+b.dataset.index]));if(kind==='weapons')$$('[data-compare-toggle]').forEach(b=>b.onclick=()=>{const id=b.dataset.compareToggle,idx=compareIds.indexOf(id);if(idx>=0)compareIds.splice(idx,1);else if(compareIds.length<2)compareIds.push(id);else toast(t('compareLimit'));syncCompare()});if(kind==='stratagems')$$('[data-copy-code]').forEach(btn=>btn.onclick=()=>copyCode(btn.dataset.copyCode||''));syncCompare()}
   q.oninput=draw;f.onchange=draw;sort.onchange=draw;ft?.addEventListener('change',draw);fp?.addEventListener('change',draw);fc?.addEventListener('input',draw);fpen?.addEventListener('change',draw);
+  if(kind==='stratagems' && fc){
+    const arrowKeys={ArrowUp:'W',ArrowLeft:'A',ArrowDown:'S',ArrowRight:'D'};
+    fc.addEventListener('keydown',e=>{
+      if(arrowKeys[e.key]){
+        e.preventDefault();
+        const map={W:'↑',A:'←',S:'↓',D:'→'};
+        const pos=fc.selectionStart ?? fc.value.length;
+        const end=fc.selectionEnd ?? fc.value.length;
+        const insert=map[arrowKeys[e.key]];
+        fc.value=fc.value.slice(0,pos)+insert+fc.value.slice(end);
+        const next=pos+insert.length;
+        try{fc.setSelectionRange(next,next)}catch{}
+        draw();
+      }
+    });
+  }
   $$('[data-quick]').forEach(btn=>btn.onclick=()=>{if(fp)fp.value=btn.dataset.quick||'';if(ft)ft.value='';$$('[data-quick]').forEach(x=>x.classList.toggle('is-active',x===btn));draw()});
   $('[data-clear]').onclick=()=>{q.value='';f.value='';sort.value='name';if(ft)ft.value='';if(fp)fp.value='';if(fc)fc.value='';if(fpen)fpen.value='';$$('[data-quick]').forEach(x=>x.classList.toggle('is-active',!x.dataset.quick));draw()};
   $('[data-compare-open]')?.addEventListener('click',openCompare);$('[data-compare-clear]')?.addEventListener('click',()=>{compareIds.splice(0);syncCompare();draw()});draw();
