@@ -23,3 +23,5 @@
 - Added stratagem call-in code filtering and category/permit filters; weapon/armor catalogs keep compact filters.
 - Reused the existing local weapon, armor, and stratagem icon assets across cards and global search.
 - Updated localization notes and added call-in filter wording for all 14 supported locales.
+
+- Sector B: weapon database filters, sorting, two-item comparison UI, plus separate and robust Steam/Active Helldivers counters.
