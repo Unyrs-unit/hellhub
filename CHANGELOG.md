@@ -25,3 +25,7 @@
 - Updated localization notes and added call-in filter wording for all 14 supported locales.
 
 - Sector B: weapon database filters, sorting, two-item comparison UI, plus separate and robust Steam/Active Helldivers counters.
+
+## Sector C
+- Refined Stratagems catalog with quick category filters, code search, sorting, copy-code controls, richer detail modal and related entries.
+- Added localized Sector C interface strings for all supported locales.
