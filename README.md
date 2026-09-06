@@ -78,3 +78,11 @@ Cards expose a completeness percentage and can be sorted by it. Detail modals al
 ## Data policy
 
 Canonical game identifiers remain available for search and reference. Display/UI/mechanical terminology is localized. Detailed balance values are shown only where the catalog has a verified value; unknown or conflicting fields remain explicit instead of being invented. Live Wiki fields are visibly labelled as community reference data and remain separate from the local verification state.
+
+
+## v7
+- Fixed empty home page / news page crash by restoring the missing fallbackNews() helper.
+- Removed the separate News section from navigation and folded the news feed into the home page.
+- Kept news.html as a backward-compatible alias that now renders the home page.
+- Stratagem arrow-sequence search is now a hidden easter egg: no UI hint, but arrow-key input works when the stratagem search field is focused.
+- Continued prioritizing game-style item art through the wiki image proxy and local fallback placeholders only when needed.

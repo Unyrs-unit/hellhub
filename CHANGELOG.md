@@ -48,3 +48,11 @@
 - Added all new catalog-interface strings to every one of the 14 locales.
 - Cross-linked support-weapon and support-stratagem records where the same verified entity already existed in both datasets; this closes the missing S-11 Speargun call-in/cooldown/patch fields without inventing values.
 - Extended the item media manifest with the structured live-reference endpoint for every catalog record.
+
+
+## v7
+- Fixed empty home page / news page crash by restoring the missing fallbackNews() helper.
+- Removed the separate News section from navigation and folded the news feed into the home page.
+- Kept news.html as a backward-compatible alias that now renders the home page.
+- Stratagem arrow-sequence search is now a hidden easter egg: no UI hint, but arrow-key input works when the stratagem search field is focused.
+- Continued prioritizing game-style item art through the wiki image proxy and local fallback placeholders only when needed.
