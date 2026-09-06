@@ -52,17 +52,20 @@ function shuffleArray(input){const a=[...input];for(let i=a.length-1;i>0;i--){co
 function tickerPool(){const loc=I18N.locale||'en';return (window.HD2_TICKER?.[loc]||window.HD2_TICKER?.[loc?.split('-')[0]]||window.HD2_TICKER?.en||[]).filter(Boolean)}
 function newTickerCycle(previousFirst=''){let a=shuffleArray(tickerPool());if(a.length>1&&previousFirst&&a[0]===previousFirst)[[a[0],a[1]]]=[a[1],a[0]];return a}
 function normalizeCallIn(value){
-  // Stratagem input search intentionally accepts direction arrows only.
-  // WASD remains an internal storage format and is never a user-facing query syntax.
+  // Hidden easter egg: code matching activates only for pure arrow input.
   const raw=String(value||'');
-  const arrows=[...raw].filter(c=>'↑←↓→'.includes(c));
-  if(!arrows.length)return '';
+  const compact=raw.replace(/\s+/g,'');
+  if(!compact||[...compact].some(c=>!'↑←↓→'.includes(c)))return '';
   const map={'↑':'W','←':'A','↓':'S','→':'D'};
-  return arrows.map(c=>map[c]).join('');
+  return [...compact].map(c=>map[c]).join('');
+}
+function canInsertStratagemArrow(value){
+  const compact=String(value||'').replace(/\s+/g,'');
+  return !compact||[...compact].every(c=>'↑←↓→'.includes(c));
 }
 const arrowHtml=(seq=[])=>`<div class="seq" aria-label="${esc(seq.join(' '))}">${seq.map(v=>`<b>${({'W':'↑','A':'←','S':'↓','D':'→'}[v]||v)}</b>`).join('')}</div>`;
 const imageKind=k=>k==='weapons'?'weapon':k==='stratagems'?'stratagem':k==='armor'?'armor':k;
-function wikiImageUrl(kind,x){const title=x?.wikiTitle||x?.name||'';return `/api/wiki/image?title=${encodeURIComponent(title)}&kind=${encodeURIComponent(imageKind(kind))}`}
+function wikiImageUrl(kind,x){const title=x?.wikiTitle||x?.name||'';return `/api/wiki/image?title=${encodeURIComponent(title)}&kind=${encodeURIComponent(imageKind(kind))}&v=media2`}
 function gameImage(kind,x,cls=''){const fallback=x?.icon||'';return `<img class="${esc(cls)}" data-game-img src="${esc(wikiImageUrl(kind,x))}" data-fallback="${esc(fallback)}" alt="${esc(localeName(x))}" loading="lazy" decoding="async">`}
 function bindGameImages(root=document){$$('img[data-game-img]',root).forEach(img=>{img.onload=()=>{if(String(img.currentSrc||img.src).includes('/api/wiki/image'))img.classList.add('image-live')};img.onerror=()=>{const f=img.dataset.fallback;if(f&&img.getAttribute('src')!==f){img.classList.remove('image-live');img.onerror=null;img.src=f}else{img.classList.add('image-missing')}}})}
 
@@ -180,7 +183,7 @@ function escOnce(e){if(e.key==='Escape')closeModal()} function closeModal(){docu
 function toast(msg){const x=document.createElement('div');x.className='toast';x.textContent=msg;document.body.appendChild(x);setTimeout(()=>x.remove(),1900)}
 function openProfile(){modal(`<div class="modal-top"><div><span class="kicker">${t('localStorage')}</span><h2>${t('profile')}</h2></div><button class="close-modal" data-close>×</button></div><form class="profile-form" data-profile-form><label>${t('profile')}<input class="field" name="callsign" maxlength="24" value="${esc(getCallsign())}" placeholder="HELLDIVER-01"></label><button class="button button-primary" type="submit">${t('saved')}</button></form>`);$('[data-profile-form]').onsubmit=e=>{e.preventDefault();localStorage.setItem('hd2-callsign',new FormData(e.currentTarget).get('callsign').trim());closeModal();renderChrome();toast(t('saved'))}}
 function searchIndex(){return [...D.weapons.map(x=>({...x,kind:'weapons',group:t('weapons'),href:'weapons.html'})),...D.stratagems.map(x=>({...x,kind:'stratagems',group:t('stratagems'),href:'stratagems.html'})),...D.armor.map(x=>({...x,kind:'armor',group:t('armor'),href:'armor.html'})),...D.enemies.map(x=>({...x,kind:'enemies',group:t('enemies'),href:'enemies.html'}))]}
-function openSearch(){modal(`<div class="modal-top"><div><span class="kicker">${t('search')}</span><h2>${t('searchCatalog')}</h2></div><button class="close-modal" data-close>×</button></div><div class="search-field"><input type="search" data-global-search placeholder="${t('searchCatalog')}…" autofocus></div><div class="search-results" data-search-results></div>`);const input=$('[data-global-search]'),root=$('[data-search-results]');const render=()=>{const raw=input.value.trim(),q=raw.toLowerCase(),queryCode=normalizeCallIn(raw);const r=searchIndex().filter(x=>{const display=localeName(x);const code=Array.isArray(x.sequence)?x.sequence.join(''):'';const hay=`${x.name} ${display} ${x.type||''} ${x.slot||''} ${x.passive||''} ${(x.traits||[]).join(' ')}`.toLowerCase();return !q||hay.includes(q)||(queryCode&&code.includes(queryCode))}).slice(0,30);root.innerHTML=r.length?r.map(x=>`<a class="search-result" href="${x.href}">${x.icon?gameImage(x.kind,x):''}<span><strong>${esc(localeName(x))}</strong><small>${esc(x.group)} // ${esc(term(x.type||x.slot||''))}</small>${x.kind==='stratagems'&&x.sequence?.length?arrowHtml(x.sequence):''}</span></a>`).join(''):`<div class="empty">${t('noResults')}</div>`;bindGameImages(root)};input.oninput=render;const keyMap={ArrowUp:'↑',ArrowLeft:'←',ArrowDown:'↓',ArrowRight:'→'};input.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||e.shiftKey)return;const glyph=keyMap[e.key];if(!glyph)return;e.preventDefault();const start=input.selectionStart??input.value.length,end=input.selectionEnd??input.value.length;input.value=`${input.value.slice(0,start)}${glyph}${input.value.slice(end)}`;const caret=start+glyph.length;input.setSelectionRange(caret,caret);render()});render();setTimeout(()=>input.focus(),20)}
+function openSearch(){modal(`<div class="modal-top"><div><span class="kicker">${t('search')}</span><h2>${t('searchCatalog')}</h2></div><button class="close-modal" data-close>×</button></div><div class="search-field"><input type="search" data-global-search placeholder="${t('searchCatalog')}…" autofocus></div><div class="search-results" data-search-results></div>`);const input=$('[data-global-search]'),root=$('[data-search-results]');const render=()=>{const raw=input.value.trim(),q=raw.toLowerCase(),queryCode=normalizeCallIn(raw);const r=searchIndex().filter(x=>{const display=localeName(x);const code=Array.isArray(x.sequence)?x.sequence.join(''):'';const hay=`${x.name} ${display} ${x.type||''} ${x.slot||''} ${x.passive||''} ${(x.traits||[]).join(' ')}`.toLowerCase();return !q||hay.includes(q)||(queryCode&&code.includes(queryCode))}).slice(0,30);root.innerHTML=r.length?r.map(x=>`<a class="search-result" href="${x.href}">${x.icon?gameImage(x.kind,x):''}<span><strong>${esc(localeName(x))}</strong><small>${esc(x.group)} // ${esc(term(x.type||x.slot||''))}</small>${x.kind==='stratagems'&&x.sequence?.length?arrowHtml(x.sequence):''}</span></a>`).join(''):`<div class="empty">${t('noResults')}</div>`;bindGameImages(root)};input.oninput=render;const keyMap={ArrowUp:'↑',ArrowLeft:'←',ArrowDown:'↓',ArrowRight:'→'};input.addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||e.shiftKey)return;const glyph=keyMap[e.key];if(!glyph||!canInsertStratagemArrow(input.value))return;e.preventDefault();const start=input.selectionStart??input.value.length,end=input.selectionEnd??input.value.length;input.value=`${input.value.slice(0,start)}${glyph}${input.value.slice(end)}`;const caret=start+glyph.length;input.setSelectionRange(caret,caret);render()});render();setTimeout(()=>input.focus(),20)}
 function pageHero(k,title,desc,badge='HELLDIVE DATABASE // TERMINAL'){return `<section class="page-hero"><div class="shell page-hero-inner"><div><span class="kicker">${esc(k)}</span><h1>${esc(title)}</h1><p>${esc(desc)}</p></div><div class="page-badge">${esc(badge)}</div></div></section>`}
 function arrowSeq(seq=[]){const map={W:'↑',A:'←',S:'↓',D:'→'};return seq.length?`<div class="seq">${seq.map(x=>`<b>${map[x]||x}</b>`).join('')}</div>`:`<span class="muted">${t('unknown')}</span>`}
 function quality(rec){return rec.verified?`<span class="quality verified">● ${t('verified')}</span>`:`<span class="quality partial">◐ ${t('catalogOnly')}</span>`}
@@ -286,7 +289,7 @@ function renderCatalog(kind){
     q.addEventListener('keydown',e=>{
       if(e.altKey||e.ctrlKey||e.metaKey||e.shiftKey)return;
       const glyph=keyMap[e.key];
-      if(!glyph)return;
+      if(!glyph||!canInsertStratagemArrow(q.value))return;
       e.preventDefault();
       const start=q.selectionStart??q.value.length,end=q.selectionEnd??q.value.length;
       q.value=`${q.value.slice(0,start)}${glyph}${q.value.slice(end)}`;

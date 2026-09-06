@@ -354,6 +354,7 @@ async function proxyWikiImage(request, url) {
     return json({ ok: false, error: 'Method not allowed' }, 405, 'no-store', { allow: 'GET' });
   }
   const title = String(url.searchParams.get('title') || '').trim();
+  const kind = String(url.searchParams.get('kind') || '').trim().toLowerCase();
   if (!title || title.length > 180) return json({ ok: false, error: 'Missing image title' }, 400);
 
   async function resolveImage(candidateTitle) {
@@ -373,6 +374,76 @@ async function proxyWikiImage(request, url) {
     const payload = await res.json();
     const page = Object.values(payload?.query?.pages || {})[0];
     return page?.original?.source || page?.thumbnail?.source || '';
+  }
+
+  function scoreMediaTitle(fileTitle) {
+    const name = String(fileTitle || '').replace(/^File:/i, '').toLowerCase();
+    const canonical = title.toLowerCase().replace(/[’'“”]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    const words = canonical.split(/\s+/).filter(Boolean);
+    let score = words.reduce((n, word) => n + (name.includes(word) ? 6 : -2), 0);
+    if (kind === 'stratagem') {
+      if (/stratagem\s*icon|strategem\s*icon/.test(name)) score += 80;
+      if (/icon/.test(name)) score += 30;
+      if (/render|weaponry|screenshot|banner|ads|first.person|third.person/.test(name)) score -= 35;
+    } else if (kind === 'weapon') {
+      if (/weapon\s*wheel/.test(name)) score += 75;
+      if (/primary\s*weaponry|secondary\s*weaponry|weaponry/.test(name)) score += 55;
+      if (/render/.test(name)) score += 35;
+      if (/icon/.test(name)) score += 20;
+      if (/ads|first.person|third.person|reticle|pattern|camo/.test(name)) score -= 45;
+    } else if (kind === 'armor') {
+      if (/armor\s*icon|body\s*armor\s*icon/.test(name)) score += 80;
+      if (/armor/.test(name)) score += 35;
+      if (/render/.test(name)) score += 30;
+      if (/helmet|cape|card|screenshot/.test(name)) score -= 45;
+    } else {
+      if (/icon/.test(name)) score += 35;
+      if (/render/.test(name)) score += 20;
+    }
+    return score;
+  }
+
+  async function resolveMediaFile(candidateTitle) {
+    if (!candidateTitle) return '';
+    const search = new URL(`${WIKI_ORIGIN}/api.php`);
+    search.searchParams.set('action', 'query');
+    search.searchParams.set('list', 'search');
+    search.searchParams.set('srsearch', candidateTitle);
+    search.searchParams.set('srnamespace', '6');
+    search.searchParams.set('srlimit', '16');
+    search.searchParams.set('format', 'json');
+    const result = await fetchWithTimeout(search.toString(), {
+      headers: { accept: 'application/json', 'user-agent': 'HELLDIVE-DB/1.0' },
+      cf: { cacheEverything: true, cacheTtl: 86400 },
+    }, 10000);
+    if (!result.ok) return '';
+    const files = (await result.json())?.query?.search || [];
+    if (!files.length) return '';
+    const ranked = files
+      .map(x => ({ title: x.title, score: scoreMediaTitle(x.title) }))
+      .filter(x => x.title && x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+    for (const candidate of ranked) {
+      const info = new URL(`${WIKI_ORIGIN}/api.php`);
+      info.searchParams.set('action', 'query');
+      info.searchParams.set('prop', 'imageinfo');
+      info.searchParams.set('iiprop', 'url|mime');
+      info.searchParams.set('iiurlwidth', '768');
+      info.searchParams.set('titles', candidate.title);
+      info.searchParams.set('format', 'json');
+      const media = await fetchWithTimeout(info.toString(), {
+        headers: { accept: 'application/json', 'user-agent': 'HELLDIVE-DB/1.0' },
+        cf: { cacheEverything: true, cacheTtl: 86400 },
+      }, 10000);
+      if (!media.ok) continue;
+      const payload = await media.json();
+      const page = Object.values(payload?.query?.pages || {})[0];
+      const image = page?.imageinfo?.[0];
+      const source = image?.thumburl || image?.url || '';
+      if (source) return source;
+    }
+    return '';
   }
 
   async function resolveMetaImage(candidateTitle) {
@@ -406,14 +477,19 @@ async function proxyWikiImage(request, url) {
 
   try {
     let resolvedTitle = '';
-    let rawImage = await resolveImage(title);
+    // Prefer the Wiki media library because the in-game wheel/stratagem icons
+    // are often stored as File: assets and are not exposed through PageImages.
+    let rawImage = await resolveMediaFile(title);
+    if (!rawImage) rawImage = await resolveImage(title);
     if (!rawImage) {
       resolvedTitle = await searchTitle(title);
-      if (resolvedTitle) rawImage = await resolveImage(resolvedTitle);
+      if (resolvedTitle) {
+        rawImage = await resolveMediaFile(resolvedTitle);
+        if (!rawImage) rawImage = await resolveImage(resolvedTitle);
+      }
     }
-    // Some wiki pages do not expose PageImages consistently. Fall back to the
-    // page's OpenGraph image before giving up, while still proxying/caching it
-    // through this Worker rather than exposing a third-party hotlink directly.
+    // Some wiki pages do not expose either image index consistently. Fall back
+    // to the page OpenGraph image before giving up.
     if (!rawImage) rawImage = await resolveMetaImage(resolvedTitle || title);
     if (!rawImage) return json({ ok: false, error: 'No item image found' }, 404, 'public, max-age=3600');
 
@@ -440,6 +516,7 @@ async function proxyWikiImage(request, url) {
         'content-type': contentType,
         'cache-control': 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800',
         'x-image-source': 'helldivers.wiki.gg',
+        'x-image-kind': kind || 'unknown',
       },
     });
   } catch (error) {

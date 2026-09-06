@@ -86,3 +86,6 @@ Canonical game identifiers remain available for search and reference. Display/UI
 - Kept news.html as a backward-compatible alias that now renders the home page.
 - Stratagem arrow-sequence search is now a hidden easter egg: no UI hint, but arrow-key input works when the stratagem search field is focused.
 - Continued prioritizing game-style item art through the wiki image proxy and local fallback placeholders only when needed.
+
+### Image delivery
+Catalog imagery is requested through `/api/wiki/image`. The Worker now searches the Helldivers Wiki media namespace for item-specific in-game-style assets before falling back to page images; bundled SVGs remain emergency placeholders only.

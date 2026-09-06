@@ -56,3 +56,11 @@
 - Kept news.html as a backward-compatible alias that now renders the home page.
 - Stratagem arrow-sequence search is now a hidden easter egg: no UI hint, but arrow-key input works when the stratagem search field is focused.
 - Continued prioritizing game-style item art through the wiki image proxy and local fallback placeholders only when needed.
+
+## v8
+- Stratagem arrow-code search remains an undocumented easter egg.
+- Arrow glyphs are inserted only when the search field is empty or already contains only arrows/whitespace.
+- With ordinary search text present, arrow keys retain normal navigation behavior and no arrow-code matching is performed.
+- Removed remaining localized UI hints that exposed the easter egg.
+- Wiki image resolver now searches File: media assets first and prioritizes in-game-style stratagem icons, weapon wheel/weaponry assets, and armor icon/render assets.
+- Image request URLs use a new cache version so stale failed image responses do not survive the deployment.
