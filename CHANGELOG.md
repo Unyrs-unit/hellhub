@@ -64,3 +64,13 @@
 - Removed remaining localized UI hints that exposed the easter egg.
 - Wiki image resolver now searches File: media assets first and prioritizes in-game-style stratagem icons, weapon wheel/weaponry assets, and armor icon/render assets.
 - Image request URLs use a new cache version so stale failed image responses do not survive the deployment.
+
+
+## 2026-09-06 — v9 game-style icon pass
+- Catalog cards now prefer deterministic game-style item assets rather than starting with a generic Wiki page-image lookup.
+- Primary/secondary/throwable weapons and body armor use community WEBP art from the open-source hd2-random-strat asset set.
+- Support weapons and stratagems use game-style SVG call-in icons where mapped.
+- Added a three-stage image fallback chain: deterministic community asset → same-origin Wiki image resolver → local HUD placeholder.
+- Image cache version bumped to v9 and `image-manifest.json` now records the primary community asset candidate for every catalog record.
+- Preserved the hidden arrow-search behavior from v8: arrow input only activates when no ordinary text is present.
+- Deterministic first-source icon coverage: 350/353 records (129/132 weapons, 114/114 stratagems, 107/107 armor); the remaining three weapons start at the Wiki media resolver, where real Media/Weapon Wheel art is available.

@@ -89,3 +89,10 @@ Canonical game identifiers remain available for search and reference. Display/UI
 
 ### Image delivery
 Catalog imagery is requested through `/api/wiki/image`. The Worker now searches the Helldivers Wiki media namespace for item-specific in-game-style assets before falling back to page images; bundled SVGs remain emergency placeholders only.
+
+
+## v9 icon pipeline
+
+Catalog art now prefers deterministic community asset files before any Wiki lookup. Weapon/throwable and armor WEBP art is resolved from the open-source `Selenestica/hd2-random-strat` asset set (which credits Helldivers Wiki for equipment imagery). Stratagem and support-weapon call-in icons prefer the game-style SVG set used by that project, sourced from `nvigneux/Helldivers-2-Stratagems-icons-svg`. The same-origin Wiki resolver and the original local HUD placeholder remain fallback layers for newly released or unmatched items.
+
+Current v9 deterministic first-source coverage is 350/353 catalog records: 129/132 weapons, 114/114 stratagems and 107/107 armor. SG-88 Break-Action Shotgun, TED-63 Dynamite and TM-1 Lure Mine intentionally start at the same-origin Wiki media resolver because their current pages expose real Media/Weapon Wheel art but the equipment asset pack has no matching file.
